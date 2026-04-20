@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Power Catalog - Latest Power</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .5; }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Contenedor estricto para el sprite */
+    .sprite-container {
+        width: 80px;
+        height: 80px;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Imagen (sin animación para evitar parpadeo) */
+    .sprite-image {
+        height: 100%;
+        width: auto;
+        position: absolute;
+        left: 0;
+        top: 0;
+        object-fit: contain;
+    }
+
+    /* --- AJUSTES VISUALES EXCLUSIVOS PARA PAWNS (Galería libre) --- */
+    /* Quitamos el recuadro, fondo, bordes y sombras de la card del pawn */
+    #pawns-grid > div {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    
+    /* Prevenimos que los fondos reaparezcan al pasar el mouse (hover) */
+    #pawns-grid > div:hover {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Ocultamos el nombre superior para dejar solo imagen y código */
+    #pawns-grid > div > span:first-of-type {
+        display: none !important;
+    }
+
+    /* Quitamos el fondo oscuro que estaba detrás del sprite */
+    #pawns-grid .sprite-container {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+  </style>
+</head>
+<body class="bg-transparent text-slate-200 min-h-screen p-4 md:p-8 font-sans antialiased selection:bg-blue-500/30 select-none">
+
+  <main class="max-w-5xl mx-auto">
+
+    <!-- Header Page -->
+    <header class="mb-8 text-center md:text-left">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 tracking-tight">
+        Último Power
+      </h1>
+    </header>
+
+    <!-- Esqueleto de Carga -->
+    <div id="loading" class="animate-pulse-slow flex flex-col items-center justify-center py-32" aria-live="polite">
+      <div class="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+      <p class="text-blue-400 font-semibold text-lg tracking-widest uppercase">Cargando catálogo...</p>
+    </div>
+
+    <!-- Contenedor Principal (Oculto hasta que cargue) -->
+    <div id="content" class="hidden space-y-8 fade-in">
+        
+        <!-- Sección 1: Tabla Principal de Información -->
+        <section class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
+            <div class="bg-slate-800/50 p-6 border-b border-slate-800 flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <img src="https://xat.com/content/web/R00243//img/navbar/powers.svg" alt="Powers icon" class="h-8 w-8 object-contain cursor-pointer" onclick="window.open('https://xat.com/powers', '_blank')" title="Ir a powers"> Detalles del Power
+                </h2>
+                <div id="t-status-badge"></div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <tbody class="divide-y divide-slate-800 text-sm md:text-base">
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">ID</th>
+                            <td class="py-4 px-6 font-mono text-blue-300 font-medium" id="t-id"></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">Imagen Principal</th>
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-4">
+                                    <div class="inline-block p-1 bg-slate-800 rounded-xl border border-slate-700 shadow-inner">
+                                        <!-- Contenedor y clases de sprite aplicadas aquí también -->
+                                        <div class="sprite-container mx-auto bg-slate-900 rounded-lg">
+                                            <img id="t-img" alt="Main Power" class="sprite-image hidden">
+                                        </div>
+                                    </div>
+                                    <!-- Ícono visual adicional "new" -->
+                                    <img src="https://xat.com/content/web/R00243/img/navbar/new.svg" alt="New icon" class="h-10 w-10 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]">
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">Nombre</th>
+                            <td class="py-4 px-6 font-bold text-white text-xl capitalize tracking-wide" id="t-name"></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">Descripción</th>
+                            <td class="py-4 px-6 text-slate-300 leading-relaxed" id="t-desc"></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">Store Status</th>
+                            <td class="py-4 px-6 font-medium" id="t-store"></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">Precio</th>
+                            <td class="py-4 px-6 font-extrabold text-emerald-400 text-2xl tracking-tight" id="t-price"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Sección 2: Smilies of the power -->
+        <section class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden p-6">
+            <h2 class="text-xl font-bold text-white mb-6 border-b border-slate-800 pb-4 flex items-center gap-3">
+                <img src="https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(smile)_20" alt="Smile icon" class="h-7 w-7 object-contain"> Smilies del Power
+            </h2>
+            <div id="smileys-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- Generado dinámicamente -->
+            </div>
+        </section>
+
+        <!-- Sección 3: Pawns -->
+        <section class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden p-6">
+            <h2 class="text-xl font-bold text-white mb-6 border-b border-slate-800 pb-4 flex items-center gap-3">
+                <img src="https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(p1pwn)_80" alt="Pawn icon" class="h-11 w-11 object-contain"> Pawns
+            </h2>
+            <div id="pawns-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- Generado dinámicamente -->
+            </div>
+        </section>
+
+    </div>
+    
+    <!-- Mensaje de Error -->
+    <div id="error" class="hidden text-center py-32" aria-live="assertive">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 max-w-md mx-auto backdrop-blur-sm">
+            <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-white font-bold text-xl mb-2">Oops! Algo salió mal.</h3>
+            <p class="text-red-300/80 font-medium text-sm mb-6">No pudimos conectar con la API para cargar el catálogo de datos.</p>
+            <button onclick="cargarDatos()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-sm font-semibold text-white shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Intentar Nuevamente
+            </button>
+        </div>
+    </div>
+
+    <!-- Banner xat (Alternativa Visual Simulada y Segura) - Movido al Footer -->
+    <a href="https://xat.com" target="_blank" rel="noopener noreferrer" class="w-full mt-8 overflow-hidden rounded-2xl border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.1)] bg-gradient-to-r from-slate-900 via-slate-800/80 to-slate-900 flex flex-col sm:flex-row justify-center sm:justify-between items-center px-6 py-4 relative group hover:border-blue-500/60 hover:shadow-[0_0_25px_rgba(59,130,246,0.2)] transition-all duration-300 cursor-pointer no-underline min-h-[90px]">
+        <!-- Fondo decorativo sutil (patrón) -->
+        <div class="absolute inset-0 bg-[url('https://xat.com/content/web/R00243//img/navbar/powers.svg')] opacity-[0.03] bg-repeat bg-[length:40px_40px] pointer-events-none"></div>
+        
+        <div class="flex items-center gap-4 relative z-10 text-center sm:text-left">
+            <div class="bg-blue-500/10 p-2.5 rounded-xl border border-blue-500/20 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-300 hidden sm:flex shadow-inner">
+                <img src="https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(allpowers)_40" alt="AllPowers icon" class="h-8 w-8 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+            </div>
+            <div>
+                <span class="text-blue-400 font-extrabold tracking-widest uppercase text-sm block group-hover:text-blue-300 transition-colors">¡OBTEN POWERS!</span>
+            </div>
+        </div>
+        
+        <div class="mt-3 sm:mt-0 relative z-10">
+            <span class="flex items-center gap-2 text-white bg-blue-600/80 group-hover:bg-blue-500 px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 border border-blue-400/30 shadow-lg shadow-blue-900/50">
+                Visitar xat.com
+                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </span>
+        </div>
+    </a>
+
+  </main>
+
+  <script>
+    // Referencias a las vistas
+    const loadingEl = document.getElementById('loading');
+    const contentEl = document.getElementById('content');
+    const errorEl = document.getElementById('error');
+
+    // Referencias a la tabla
+    const tId = document.getElementById('t-id');
+    const tImg = document.getElementById('t-img');
+    const tName = document.getElementById('t-name');
+    const tDesc = document.getElementById('t-desc');
+    const tStatusBadge = document.getElementById('t-status-badge');
+    const tStore = document.getElementById('t-store');
+    const tPrice = document.getElementById('t-price');
+
+    // Referencias a los grids
+    const smileysGrid = document.getElementById('smileys-grid');
+    const pawnsGrid = document.getElementById('pawns-grid');
+
+    // Control de vistas
+    function showView(view) {
+        loadingEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+        errorEl.classList.add('hidden');
+        
+        if(view === 'loading') loadingEl.classList.remove('hidden');
+        if(view === 'content') contentEl.classList.remove('hidden');
+        if(view === 'error') errorEl.classList.remove('hidden');
+    }
+
+    // Helper actualizado para crear tarjetas con la nueva estructura visual: 
+    // Nombre arriba -> Imagen centrada -> Código abajo
+    function createImageCard(topText, imageUrl, bottomText, containerElement) {
+        const card = document.createElement('div');
+        card.className = 'group bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-slate-700 hover:border-slate-600 transition-all duration-300 shadow-sm hover:shadow-md relative';
+        
+        // Elemento texto superior (Nombre)
+        const topSpan = document.createElement('span');
+        topSpan.className = 'text-sm font-bold text-white mb-3 w-full text-center truncate capitalize';
+        topSpan.title = topText;
+        topSpan.textContent = topText;
+
+        // Contenedor de la imagen
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'sprite-container mx-auto mb-3 bg-slate-900 rounded group-hover:scale-110 transition-transform duration-300 shadow-inner';
+        
+        // Elemento <img>
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = topText;
+        img.className = "sprite-image";
+        
+        img.onerror = () => {
+            // Ya no ocultamos toda la tarjeta, solo la imagen que falló
+            img.style.display = 'none';
+            
+            // Agregamos un texto de respaldo al contenedor
+            imgContainer.classList.add('flex', 'items-center', 'justify-center');
+            const fallbackText = document.createElement('span');
+            fallbackText.className = 'text-[10px] text-slate-500 font-medium text-center px-1';
+            fallbackText.textContent = 'Sin imagen';
+            imgContainer.appendChild(fallbackText);
+        };
+
+        // Elemento texto inferior (Código)
+        const bottomSpan = document.createElement('span');
+        bottomSpan.className = 'copyable-code text-xs font-mono font-semibold text-slate-300 bg-slate-900/80 px-2 py-1.5 rounded-lg w-full text-center truncate border border-slate-700 mt-auto group-hover:text-white group-hover:border-slate-500 transition-colors cursor-pointer select-text';
+        bottomSpan.textContent = bottomText;
+        bottomSpan.title = "Clic para copiar";
+
+        // EVENTO: Copiado al hacer clic
+        bottomSpan.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Usando un textarea oculto por alta compatibilidad
+            const textarea = document.createElement('textarea');
+            textarea.value = this.textContent;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                
+                // Crear leyenda visual (tooltip)
+                const tooltip = document.createElement('div');
+                tooltip.textContent = '¡Copiado!';
+                tooltip.className = 'absolute bottom-12 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg opacity-0 transition-all duration-300 pointer-events-none z-10';
+                card.appendChild(tooltip);
+                
+                // Mostrar tooltip con animación
+                requestAnimationFrame(() => {
+                    tooltip.style.opacity = '1';
+                    tooltip.style.transform = 'translateY(-5px)';
+                });
+
+                // Ocultar y remover tooltip después de un rato
+                setTimeout(() => {
+                    tooltip.style.opacity = '0';
+                    setTimeout(() => {
+                        if (card.contains(tooltip)) tooltip.remove();
+                    }, 300);
+                }, 1500);
+
+            } catch (err) {
+                console.error('Error al copiar', err);
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        });
+
+        // Ensamblado
+        imgContainer.appendChild(img);
+        card.appendChild(topSpan);
+        card.appendChild(imgContainer);
+        card.appendChild(bottomSpan);
+        containerElement.appendChild(card);
+    }
+
+    async function cargarDatos() {
+        showView('loading');
+        
+        try {
+            const res = await fetch("https://illuxat.com/api/latestpower");
+            
+            if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+            
+            const json = await res.json();
+            const item = json.data.latest;
+
+            // 1. Poblar Tabla Principal
+            tId.textContent = item?.Id || "N/A";
+            tName.textContent = item?.Name || "Desconocido";
+            tDesc.textContent = item?.Descriptions?.shortDescription || "Sin descripción disponible.";
+            tStore.textContent = item?.StoreStatus || "N/A";
+            tPrice.textContent = item?.Prices?.store ? item.Prices.store : "N/A";
+
+            const statusText = item?.Status || "N/A";
+            tStatusBadge.innerHTML = `<span class="bg-blue-500/20 text-blue-400 py-1.5 px-4 rounded-full text-xs font-bold tracking-widest uppercase border border-blue-500/30 shadow-sm">${statusText}</span>`;
+
+            // Imagen principal usando xat GetStrip8
+            const primerSmiley = (item?.Smileys && item.Smileys.length > 0) ? item.Smileys[0] : null;
+            if (primerSmiley) {
+                tImg.src = `https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(${primerSmiley})_80`;
+                tImg.style.display = 'block';
+                tImg.onerror = function() { this.style.display = 'none'; };
+            } else {
+                tImg.style.display = 'none';
+            }
+
+            // 2. Poblar "Smilies of the power"
+            smileysGrid.innerHTML = ''; 
+            if (item?.Smileys && Array.isArray(item.Smileys)) {
+                item.Smileys.forEach(nombre => {
+                    // Parámetros: topText, imageUrl, bottomText, container
+                    const imgUrl = `https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(${nombre})_80`;
+                    createImageCard(nombre, imgUrl, `(${nombre})`, smileysGrid);
+                });
+            } else {
+                smileysGrid.innerHTML = '<p class="col-span-full text-slate-500 text-sm italic py-4">No se encontraron smilies.</p>';
+            }
+
+            // 3. Poblar "Pawns"
+            pawnsGrid.innerHTML = ''; 
+            if (item?.Pawns && typeof item.Pawns === 'object') {
+                const pawnsEntries = Object.entries(item.Pawns); // Usando Object.entries estrictamente
+
+                if (pawnsEntries.length > 0) {
+                    pawnsEntries.forEach(([code, nombre]) => {
+                        const powerName = item.Name || "Desconocido";
+                        
+                        // --- VALIDACIÓN LÓGICA DE LA FUENTE DE LA IMAGEN ---
+                        // Comprobamos si el nombre asignado al pawn es undefined, null o un string vacío.
+                        // Esto pasa cuando el objeto de Pawns trae un valor como { "f": "" }
+                        let validSmileyName = nombre;
+                        if (!validSmileyName || String(validSmileyName).trim() === '') {
+                            // Usamos el primer smiley del power como imagen por defecto si la data viene vacía.
+                            validSmileyName = (item.Smileys && item.Smileys.length > 0) ? item.Smileys[0] : powerName.toLowerCase();
+                        }
+                        
+                        // Construimos la URL validada
+                        const imgUrl = `https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(${validSmileyName})_80`;
+                        createImageCard(powerName, imgUrl, `(hat#${code})`, pawnsGrid);
+                    });
+                } else {
+                    pawnsGrid.innerHTML = '<p class="col-span-full text-slate-500 text-sm italic py-4">No se encontraron pawns.</p>';
+                }
+            } else {
+                pawnsGrid.innerHTML = '<p class="col-span-full text-slate-500 text-sm italic py-4">No se encontraron pawns.</p>';
+            }
+
+            showView('content');
+            
+        } catch (error) {
+            console.error("Error obteniendo datos:", error);
+            showView('error');
+        }
+    }
+
+    // Iniciar
+    cargarDatos();
+
+    // --- PROTECCIÓN GLOBAL DE COPIA ---
+    
+    // Prevenir clic derecho en todo el documento excepto en los códigos
+    document.addEventListener('contextmenu', function(e) {
+        if (!e.target.classList.contains('copyable-code')) {
+            e.preventDefault();
+        }
+    });
+
+    // Prevenir copiado manual, salvo cuando lo dispara nuestro script o seleccionan el código a mano
+    document.addEventListener('copy', function(e) {
+        if (e.target.tagName === 'TEXTAREA') return; 
+        
+        const selection = window.getSelection();
+        let isCopyable = false;
+        
+        if (selection.rangeCount > 0) {
+            const node = selection.focusNode;
+            if (node && node.parentElement && node.parentElement.classList.contains('copyable-code')) {
+                isCopyable = true;
+            }
+        }
+        
+        if (!isCopyable) {
+            e.preventDefault();
+        }
+    });
+
+    // Prevenir atajos de teclado (Ctrl+C / Cmd+C)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+            const selection = window.getSelection();
+            let isCopyable = false;
+            if (selection.rangeCount > 0) {
+                const node = selection.focusNode;
+                if (node && node.parentElement && node.parentElement.classList.contains('copyable-code')) {
+                    isCopyable = true;
+                }
+            }
+            if (!isCopyable && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+            }
+        }
+    });
+  </script>
+
+</body>
+</html>
