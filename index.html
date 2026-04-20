@@ -265,9 +265,15 @@
         img.alt = topText;
         img.className = "sprite-image";
         
-        img.onerror = () => {
+        img.onerror = function() {
+            // Fallback automático exclusivo para pawns: si falla _80, intenta _40
+            if (containerElement.id === 'pawns-grid' && this.src.includes('_80')) {
+                this.src = this.src.replace('_80', '_40');
+                return;
+            }
+
             // Ya no ocultamos toda la tarjeta, solo la imagen que falló
-            img.style.display = 'none';
+            this.style.display = 'none';
             
             // Agregamos un texto de respaldo al contenedor
             imgContainer.classList.add('flex', 'items-center', 'justify-center');
@@ -394,8 +400,8 @@
                             validSmileyName = (item.Smileys && item.Smileys.length > 0) ? item.Smileys[0] : powerName.toLowerCase();
                         }
                         
-                        // Construimos la URL validada
-                        const imgUrl = `https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(${validSmileyName})_40`;
+                        // Construimos la URL validada (ahora solicitando _80 inicialmente)
+                        const imgUrl = `https://s0.xat.com/web_gear/chat/GetStrip8.php?c=a_(${validSmileyName})_80`;
                         createImageCard(powerName, imgUrl, `(hat#${code})`, pawnsGrid);
                     });
                 } else {
