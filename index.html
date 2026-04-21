@@ -144,6 +144,15 @@
                             <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">Precio</th>
                             <td class="py-4 px-6 font-extrabold text-emerald-400 text-2xl tracking-tight" id="t-price"></td>
                         </tr>
+                        <!-- Nueva fila para el contador (Oculta por defecto) -->
+                        <tr class="hover:bg-slate-800/30 transition-colors hidden" id="row-countdown">
+                            <th class="py-4 px-6 bg-slate-900/50 font-semibold w-1/3 text-slate-400 uppercase text-xs tracking-wider">Lanzamiento</th>
+                            <td class="py-4 px-6">
+                                <div id="t-countdown-status" class="text-sm font-medium text-slate-300 mb-1 capitalize"></div>
+                                <div id="t-countdown-timer" class="font-mono text-xl text-amber-400 font-bold tracking-wider"></div>
+                                <div class="text-[10px] text-slate-500/70 mt-1 italic pointer-events-none select-none">Puede tener un delay de 1-2 segundos</div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -227,6 +236,12 @@
     const tStatusBadge = document.getElementById('t-status-badge');
     const tStore = document.getElementById('t-store');
     const tPrice = document.getElementById('t-price');
+
+    // Referencias al Countdown
+    const rowCountdown = document.getElementById('row-countdown');
+    const tCountdownStatus = document.getElementById('t-countdown-status');
+    const tCountdownTimer = document.getElementById('t-countdown-timer');
+    let countdownInterval;
 
     // Referencias a los grids
     const smileysGrid = document.getElementById('smileys-grid');
@@ -339,6 +354,67 @@
         containerElement.appendChild(card);
     }
 
+    // Nueva función para obtener la cuenta regresiva
+    async function cargarCountdown() {
+        try {
+            const res = await fetch("https://api.xatblog.net/countdown", {
+                headers: { 'accept': '*/*' }
+            });
+            if (!res.ok) throw new Error(`Error HTTP Countdown: ${res.status}`);
+            const data = await res.json();
+
+            if (data.code === 200) {
+                rowCountdown.classList.remove('hidden'); // Mostrar la fila si hay datos
+                
+                // Cambiar "Will be released" por "Tiempo Restante"
+                let apiStatus = data.status || "Estado desconocido";
+                if (apiStatus.toLowerCase() === "will be released") {
+                    apiStatus = "Tiempo Restante";
+                }
+                tCountdownStatus.textContent = apiStatus;
+
+                if (data.status_code === 'counting' && data.remaining_int) {
+                    // 1. Calcular la fecha/hora exacta en la que el contador llegará a cero
+                    const targetTime = Date.now() + (parseInt(data.remaining_int, 10) * 1000);
+                    
+                    if (countdownInterval) clearInterval(countdownInterval);
+
+                    const updateTimer = () => {
+                        // 2. Calcular los segundos restantes reales comparando con la hora actual
+                        const timeLeft = Math.floor((targetTime - Date.now()) / 1000);
+
+                        if (timeLeft <= 0) {
+                            tCountdownTimer.textContent = "¡Lanzado!";
+                            tCountdownTimer.classList.remove('text-amber-400');
+                            tCountdownTimer.classList.add('text-emerald-400');
+                            clearInterval(countdownInterval);
+                            return;
+                        }
+                        
+                        // Calculando días, horas, minutos y segundos
+                        const d = Math.floor(timeLeft / (3600 * 24));
+                        const h = Math.floor((timeLeft % (3600 * 24)) / 3600).toString().padStart(2, '0');
+                        const m = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0');
+                        const s = Math.floor(timeLeft % 60).toString().padStart(2, '0');
+                        
+                        let timeString = `${h}:${m}:${s}`;
+                        if (d > 0) timeString = `${d}d ` + timeString; // Si hay días, se añaden al inicio
+                        
+                        tCountdownTimer.textContent = timeString;
+                    };
+
+                    updateTimer(); // Llamada inicial
+                    countdownInterval = setInterval(updateTimer, 1000); // Actualización cada segundo
+                } else {
+                    tCountdownTimer.textContent = "";
+                }
+            }
+        } catch (error) {
+            console.error("Error obteniendo countdown:", error);
+            rowCountdown.classList.add('hidden'); // Ocultar si falla la API
+        }
+    }
+
     async function cargarDatos() {
         showView('loading');
         
@@ -412,6 +488,9 @@
             }
 
             showView('content');
+            
+            // Disparar el fetch del countdown justo después de mostrar el contenido
+            cargarCountdown();
             
         } catch (error) {
             console.error("Error obteniendo datos:", error);
